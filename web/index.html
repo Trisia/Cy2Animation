@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello</title>
+    <style>
+        .content {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="backgroundContainer" class="content"></div>
+</body>
+<script>
+    /* create canvas element */
+    var canvas_el = document.createElement('canvas');
+
+    /* set size canvas */
+    // canvas_el.style.width = "100%";
+    // canvas_el.style.height = "100%";
+
+    canvas_el.style.zIndex = "-1";
+    var backgroundContainer = document.getElementById("backgroundContainer");
+
+    backgroundContainer.appendChild(canvas_el);
+    var context = canvas_el.getContext("2d");
+    canvas_el.width = window.outerWidth;
+    canvas_el.height = window.outerHeight;
+    canvas_el.style.position = "fixed";
+    canvas_el.style.left = "0";
+    canvas_el.style.top = "0";
+    context.fillRect(0, 0, canvas_el.width, canvas_el.height);
+
+    window.requestAnimationFrame(main);
+    var scaleRingAnimate = new ScaleRingAnimate(canvas_el.width / 20);
+
+    function main() {
+        context.clearRect(0, 0, canvas_el.width, canvas_el.height);
+        context.fillRect(0, 0, canvas_el.width, canvas_el.height);
+
+        scaleRingAnimate.draw();
+        window.requestAnimationFrame(main);
+    }
+
+
+    /**
+     * 绘制带加速放大的圆环
+     * @param radius 圆环初始半径
+     * @param duration 持续时间，默认3000
+     * @param delay 延迟绘制时间吗，默认300
+     */
+    function ScaleRingAnimate(radius, duration, delay) {
+        this.plus = -0.02;
+        this.a = 0.007;
+        this.scale = 1;
+        this.duration = duration ? duration : 3000;
+        this.delay = delay ? delay : 300;
+        // 直接使用构造器参数，解决变量作用域的问题
+        radius = radius ? radius : 100;
+        this.startedTime = null;
+        this.costTime = 0;
+        // 绘制
+        this.draw = function () {
+            if (this.startedTime == null) this.startedTime = Date.now();
+            this.costTime = Date.now() - this.startedTime;
+            // 延迟时间
+            if (this.costTime > this.delay) {
+                // 缩小
+                if (this.scale < 0.9) this.plus = -this.plus;
+                this.scale += this.plus;
+                // 带加速的放大
+                if (this.scale > 1) {
+                    this.scale += this.a;
+                    this.a = this.a + 0.02;
+                }
+
+            } else if (this.costTime > this.duration) return; // 时间大于持续时间直接返还
+            // 缩放绘制
+            enlarge(this.scale, function () {
+                ring({x: 0, y: 0}, radius, radius / 3);
+            });
+        };
+    }
+
+    /**
+     * 放大圆环
+     * @param scale 缩放倍数
+     * @param drawer 缩放绘制画面
+     */
+    function enlarge(scale, drawer) {
+        var centerPoint = center();
+        context.save();
+        context.translate(centerPoint.x, centerPoint.y);
+        context.scale(scale, scale);
+        drawer();
+        context.restore();
+    }
+
+    /**
+     * 绘制环形
+     * @param centerPoint 环形圆心
+     * @param radius 环形内环半径
+     * @param ringWidth  环形宽度
+     */
+    function ring(centerPoint, radius, ringWidth) {
+
+        context.save();
+        context.beginPath();
+        context.arc(centerPoint.x, centerPoint.y, radius + ringWidth, 0, 2 * Math.PI);
+        context.closePath();
+        context.fillStyle = "#fff";
+        context.fill();
+
+        context.beginPath();
+        context.arc(centerPoint.x, centerPoint.y, radius, 0, 2 * Math.PI);
+        context.closePath();
+        context.fillStyle = "#000";
+        context.fill();
+        context.restore();
+    }
+
+
+    /**
+     * 获取中心点
+     */
+    function center() {
+        return {
+            x: canvas_el.width / 2,
+            y: canvas_el.height / 2
+        }
+    }
+
+    /**
+     * 窗口重置
+     */
+    window.addEventListener('resize', function () {
+        canvas_el.width = window.outerWidth;
+        canvas_el.height = window.outerHeight;
+    });
+</script>
+</html>
